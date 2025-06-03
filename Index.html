@@ -250,8 +250,8 @@
           const other = particles[j];
           const distance = Math.hypot(particle.x - other.x, particle.y - other.y);
           if (distance < 10000) { // Ajustez la distance pour la visibilité des traits
-            ctx.strokeStyle = `rgba(255, 255, 255, ${1 - distance / 200})`; // Plus proche = plus visible
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = `rgba(255, 255, 255, ${1 - distance / 150})`; // Plus proche = plus visible
+            ctx.lineWidth = 3;
             ctx.beginPath();
             ctx.moveTo(particle.x, particle.y);
             ctx.lineTo(other.x, other.y);
