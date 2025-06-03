@@ -149,9 +149,20 @@
       .then(data => {
         games = data;
         renderGames();
-      });
+      })
+      .catch(error => console.error("Erreur lors du chargement des jeux :", error));
 
     function renderGames() {
+      // Vérifiez si le tableau de jeux n'est pas vide
+      if (games.length === 0) {
+        console.error("Aucun jeu trouvé dans le fichier JSON.");
+        return;
+      }
+
+      // Vider la liste des jeux avant de la remplir
+      gameList.innerHTML = '';
+      selector.innerHTML = '';
+
       games.forEach(game => {
         const card = document.createElement("div");
         card.className = "game-card";
