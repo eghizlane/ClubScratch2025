@@ -1,4 +1,4 @@
-//Ne pas oublier de rajouter une "," à la fin des lignes sauf pour la derniere.
+_comment : "Ne pas oublier de rajouter une , à la fin des lignes sauf pour la derniere"
 [
   { "name": "money king test", "id": "1098721850", "type": "scratch", "description": "Boss test play it or whatever,this is part of a bigger project" },
   { "name": "Try-Angle", "id": "979987179", "type": "scratch", "description": "Click to move and press space to fire" },
