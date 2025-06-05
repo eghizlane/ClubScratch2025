@@ -16,7 +16,7 @@
       display: flex;
       justify-content: center;
       padding: 2rem;
-      position: relative; /* Pour le positionnement du canvas */
+      position: relative;
     }
     #particleCanvas {
       position: absolute;
@@ -24,7 +24,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      pointer-events: none; /* Pour que les clics passent à travers */
+      pointer-events: none;
     }
     .container {
       max-width: 1200px;
@@ -50,7 +50,7 @@
     }
     #gameList {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(3, 1fr);
       gap: 1.5rem;
       width: 100%;
     }
@@ -153,13 +153,7 @@
       .catch(error => console.error("Erreur lors du chargement des jeux :", error));
 
     function renderGames() {
-      // Vérifiez si le tableau de jeux n'est pas vide
-      if (games.length === 0) {
-        console.error("Aucun jeu trouvé dans le fichier JSON.");
-        return;
-      }
-
-      // Vider la liste des jeux avant de la remplir
+      if (games.length === 0) return;
       gameList.innerHTML = '';
       selector.innerHTML = '';
 
@@ -204,7 +198,6 @@
       frame.src = "";
     });
 
-    // Effet de particules
     const canvas = document.getElementById('particleCanvas');
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
@@ -218,22 +211,19 @@
         this.x = x;
         this.y = y;
         this.size = Math.random() * 5 + 1;
-        this.speedX = (Math.random() * 2 - 1) * 0.5; // Ralentir
-        this.speedY = (Math.random() * 2 - 1) * 0.5; // Ralentir
+        this.speedX = (Math.random() * 2 - 1) * 0.5;
+        this.speedY = (Math.random() * 2 - 1) * 0.5;
         this.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
       }
 
       update() {
         this.x += this.speedX;
         this.y += this.speedY;
-
-        // Rebondir sur les bords
         if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
         if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
       }
 
       draw() {
-        // Effet de brillance
         const gradient = ctx.createRadialGradient(this.x, this.y, this.size, this.x, this.y, this.size * 2);
         gradient.addColorStop(0, this.color);
         gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
@@ -255,13 +245,11 @@
       particles.forEach((particle, index) => {
         particle.update();
         particle.draw();
-
-        // Dessiner des lignes entre les particules proches
         for (let j = index + 1; j < particles.length; j++) {
           const other = particles[j];
           const distance = Math.hypot(particle.x - other.x, particle.y - other.y);
-          if (distance < 10000) { // Ajustez la distance pour la visibilité des traits
-            ctx.strokeStyle = `rgba(255, 255, 255, ${1 - distance / 150})`; // Plus proche = plus visible
+          if (distance < 10000) {
+            ctx.strokeStyle = `rgba(255, 255, 255, ${1 - distance / 150})`;
             ctx.lineWidth = 3;
             ctx.beginPath();
             ctx.moveTo(particle.x, particle.y);
