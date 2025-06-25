@@ -44,15 +44,33 @@
       align-items: center;
     }
     .hidden { display: none; }
+    #menu {
+      position: relative;
+    }
     #menu h1 {
-      margin-bottom: 2rem;
+      margin-bottom: 1rem;
       font-size: 2rem;
     }
+    #contactBtn {
+      position: absolute;
+      top: 0.5rem;
+      right: 1rem;
+      padding: 0.5rem 1rem;
+      background: #333;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    #contactBtn:hover { background: #444; }
     #gameList {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 1.5rem;
       width: 100%;
+      margin-top: 1rem;
     }
     .game-card {
       background: rgba(255,255,255,0.05);
@@ -107,6 +125,35 @@
       border-radius: 12px;
       box-shadow: 0 0 20px rgba(0,0,0,0.6);
     }
+    form {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: 600px;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 150px;
+      padding: 1rem;
+      border-radius: 8px;
+      border: none;
+      margin-bottom: 1rem;
+      background: rgba(255,255,255,0.1);
+      color: #f0f0f0;
+      font-size: 1rem;
+    }
+    .btn-primary {
+      padding: 0.75rem 1.5rem;
+      background: #333;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      align-self: flex-end;
+      transition: background 0.3s;
+    }
+    .btn-primary:hover { background: #444; }
     @keyframes fadeIn {
       from { opacity: 0; transform: scale(0.98); }
       to { opacity: 1; transform: scale(1); }
@@ -119,11 +166,15 @@
 <body>
   <canvas id="particleCanvas"></canvas>
   <div class="container">
+
+    <!-- Menu Section -->
     <section id="menu" class="fade-in">
       <h1><i class="ri-gamepad-line"></i> Choisir un jeu</h1>
+      <button id="contactBtn">Envoyer un message</button>
       <div id="gameList"></div>
     </section>
 
+    <!-- Game View Section -->
     <section id="gameView" class="hidden">
       <header>
         <button id="backBtn"><i class="ri-arrow-left-line"></i> Retour</button>
@@ -133,17 +184,36 @@
         <iframe id="gameFrame" allowfullscreen></iframe>
       </main>
     </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="hidden fade-in">
+      <header>
+        <button id="backContact"><i class="ri-arrow-left-line"></i> Retour</button>
+      </header>
+      <main>
+        <h2>Envoyer un message</h2>
+        <form name="contact" method="POST" data-netlify="true">
+          <textarea name="message" placeholder="Votre message..." required></textarea>
+          <button type="submit" class="btn-primary">Envoyer</button>
+        </form>
+      </main>
+    </section>
+
   </div>
 
   <script>
     const menu = document.getElementById("menu");
     const gameView = document.getElementById("gameView");
+    const contactSect = document.getElementById("contact");
     const gameList = document.getElementById("gameList");
     const selector = document.getElementById("gameSelector");
     const frame = document.getElementById("gameFrame");
     const backBtn = document.getElementById("backBtn");
+    const contactBtn = document.getElementById("contactBtn");
+    const backContact = document.getElementById("backContact");
     let games = [];
 
+    // Load games
     fetch("games.json")
       .then(response => response.json())
       .then(data => {
@@ -177,6 +247,7 @@
 
     function openGame(id) {
       menu.classList.add("hidden");
+      contactSect.classList.add("hidden");
       gameView.classList.remove("hidden");
       selector.value = id;
       loadGame(id);
@@ -198,6 +269,18 @@
       frame.src = "";
     });
 
+    // Contact page handlers
+    contactBtn.addEventListener("click", () => {
+      menu.classList.add("hidden");
+      gameView.classList.add("hidden");
+      contactSect.classList.remove("hidden");
+    });
+    backContact.addEventListener("click", () => {
+      contactSect.classList.add("hidden");
+      menu.classList.remove("hidden");
+    });
+
+    // Particle animation (unchanged)
     const canvas = document.getElementById('particleCanvas');
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
@@ -215,14 +298,12 @@
         this.speedY = (Math.random() * 2 - 1) * 0.5;
         this.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
       }
-
       update() {
         this.x += this.speedX;
         this.y += this.speedY;
         if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
         if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
       }
-
       draw() {
         const gradient = ctx.createRadialGradient(this.x, this.y, this.size, this.x, this.y, this.size * 2);
         gradient.addColorStop(0, this.color);
@@ -239,35 +320,25 @@
         particles.push(new Particle(Math.random() * canvas.width, Math.random() * canvas.height));
       }
     }
-
     function animate() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       particles.forEach((particle, index) => {
-        particle.update();
-        particle.draw();
+        particle.update(); particle.draw();
         for (let j = index + 1; j < particles.length; j++) {
           const other = particles[j];
-          const distance = Math.hypot(particle.x - other.x, particle.y - other.y);
-          if (distance < 10000) {
-            ctx.strokeStyle = `rgba(255, 255, 255, ${1 - distance / 150})`;
+          const dist = Math.hypot(particle.x - other.x, particle.y - other.y);
+          if (dist < 10000) {
+            ctx.strokeStyle = `rgba(255, 255, 255, ${1 - dist/150})`;
             ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(particle.x, particle.y);
-            ctx.lineTo(other.x, other.y);
-            ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(particle.x, particle.y);
+            ctx.lineTo(other.x, other.y); ctx.stroke();
           }
         }
       });
       requestAnimationFrame(animate);
     }
-
-    window.addEventListener('resize', () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    });
-
-    init();
-    animate();
+    window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+    init(); animate();
   </script>
 </body>
 </html>
