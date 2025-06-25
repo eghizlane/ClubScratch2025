@@ -1,115 +1,273 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Club Jeux + Messages</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Club Jeux</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/remixicon/fonts/remixicon.css" rel="stylesheet" />
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: Arial, sans-serif;
-      background: #222;
+      font-family: 'Inter', sans-serif;
+      background: radial-gradient(circle at top left, #222 0%, #111 100%);
       color: #f0f0f0;
-      margin: 0;
-      padding: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 2rem;
+      position: relative;
+    }
+    #particleCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
     }
     .container {
-      max-width: 800px;
-      margin: auto;
-      padding: 2rem;
+      max-width: 1200px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      backdrop-filter: blur(2px);
+      overflow: hidden;
     }
-    button {
+    section {
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .hidden { display: none; }
+    #menu h1 {
+      margin-bottom: 2rem;
+      font-size: 2rem;
+    }
+    #gameList {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      width: 100%;
+    }
+    .game-card {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 1.5rem;
+      text-align: center;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    .game-card:hover {
+      background: rgba(255,255,255,0.1);
+      transform: translateY(-5px);
+    }
+    header {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header button {
+      padding: 0.5rem 1rem;
+      background: #333;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    header button:hover { background: #444; }
+    select {
       padding: 0.6rem 1rem;
-      margin-top: 1rem;
+      border-radius: 8px;
       background: #333;
       color: white;
       border: none;
-      border-radius: 6px;
-      cursor: pointer;
+      font-size: 1rem;
     }
-    button:hover { background: #444; }
-    textarea {
-      width: 100%;
-      height: 100px;
-      padding: 0.5rem;
-      border-radius: 6px;
-      border: none;
-      margin-top: 1rem;
-    }
-    .hidden { display: none; }
-    .message {
-      background: #333;
+    main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
       padding: 1rem;
-      margin: 0.5rem 0;
-      border-radius: 6px;
     }
-    nav button {
-      margin-right: 0.5rem;
+    iframe {
+      width: 100%;
+      max-width: 1280px;
+      height: 720px;
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.6);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .fade-in {
+      animation: fadeIn 1.2s ease-out;
     }
   </style>
 </head>
 <body>
-
+  <canvas id="particleCanvas"></canvas>
   <div class="container">
+    <section id="menu" class="fade-in">
+      <h1><i class="ri-gamepad-line"></i> Choisir un jeu</h1>
+      <div id="gameList"></div>
+    </section>
 
-    <nav>
-      <button onclick="showPage('menu')">🏠 Menu</button>
-      <button onclick="showPage('games')">🎮 Jeux</button>
-      <button onclick="showPage('messages')">📨 Envoyer un message</button>
-    </nav>
-
-    <!-- Page Menu -->
-    <div id="menuPage">
-      <h1>Bienvenue au Club Jeux</h1>
-      <p>Choisissez une option ci-dessus.</p>
-    </div>
-
-    <!-- Page Jeux -->
-    <div id="gamesPage" class="hidden">
-      <h1>Liste des jeux</h1>
-      <p>👉 (Ici tu peux ajouter ta liste de jeux)</p>
-    </div>
-
-    <!-- Page Messages -->
-    <div id="messagesPage" class="hidden">
-      <h1>Envoyer un message</h1>
-      <textarea id="messageInput" placeholder="Écris ton message ici..."></textarea>
-      <button onclick="sendMessage()">Envoyer</button>
-      <h2>Messages reçus :</h2>
-      <div id="messageList"></div>
-    </div>
-
+    <section id="gameView" class="hidden">
+      <header>
+        <button id="backBtn"><i class="ri-arrow-left-line"></i> Retour</button>
+        <select id="gameSelector"></select>
+      </header>
+      <main>
+        <iframe id="gameFrame" allowfullscreen></iframe>
+      </main>
+    </section>
   </div>
 
   <script>
-    const pages = ["menuPage", "gamesPage", "messagesPage"];
-    const messages = [];
+    const menu = document.getElementById("menu");
+    const gameView = document.getElementById("gameView");
+    const gameList = document.getElementById("gameList");
+    const selector = document.getElementById("gameSelector");
+    const frame = document.getElementById("gameFrame");
+    const backBtn = document.getElementById("backBtn");
+    let games = [];
 
-    function showPage(page) {
-      pages.forEach(p => document.getElementById(p).classList.add("hidden"));
-      document.getElementById(page + "Page").classList.remove("hidden");
+    fetch("games.json")
+      .then(response => response.json())
+      .then(data => {
+        games = data;
+        renderGames();
+      })
+      .catch(error => console.error("Erreur lors du chargement des jeux :", error));
+
+    function renderGames() {
+      if (games.length === 0) return;
+      gameList.innerHTML = '';
+      selector.innerHTML = '';
+
+      games.forEach(game => {
+        const card = document.createElement("div");
+        card.className = "game-card";
+        card.textContent = game.name;
+        card.onclick = () => openGame(game.id);
+        gameList.appendChild(card);
+
+        const option = document.createElement("option");
+        option.value = game.id;
+        option.textContent = game.name;
+        selector.appendChild(option);
+      });
     }
 
-    function sendMessage() {
-      const input = document.getElementById("messageInput");
-      const msg = input.value.trim();
-      if (msg) {
-        messages.push(msg);
-        input.value = "";
-        displayMessages();
+    selector.addEventListener("change", (e) => {
+      loadGame(e.target.value);
+    });
+
+    function openGame(id) {
+      menu.classList.add("hidden");
+      gameView.classList.remove("hidden");
+      selector.value = id;
+      loadGame(id);
+    }
+
+    function loadGame(id) {
+      const game = games.find(g => g.id === id || g.id.toString() === id);
+      if (!game) return;
+      if (game.type === "scratch") {
+        frame.src = `https://turbowarp.org/${game.id}/embed?autoplay&fullscreen`;
+      } else if (game.type === "unity") {
+        frame.src = game.id;
       }
     }
 
-    function displayMessages() {
-      const list = document.getElementById("messageList");
-      list.innerHTML = "";
-      messages.forEach((msg, index) => {
-        const div = document.createElement("div");
-        div.className = "message";
-        div.textContent = msg;
-        list.appendChild(div);
-      });
-    }
-  </script>
+    backBtn.addEventListener("click", () => {
+      gameView.classList.add("hidden");
+      menu.classList.remove("hidden");
+      frame.src = "";
+    });
 
+    const canvas = document.getElementById('particleCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let particles = [];
+    const particleCount = 180;
+
+    class Particle {
+      constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.size = Math.random() * 5 + 1;
+        this.speedX = (Math.random() * 2 - 1) * 0.5;
+        this.speedY = (Math.random() * 2 - 1) * 0.5;
+        this.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+      }
+
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        if (this.x < 0 || this.x > canvas.width) this.speedX *= -1;
+        if (this.y < 0 || this.y > canvas.height) this.speedY *= -1;
+      }
+
+      draw() {
+        const gradient = ctx.createRadialGradient(this.x, this.y, this.size, this.x, this.y, this.size * 2);
+        gradient.addColorStop(0, this.color);
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function init() {
+      for (let i = 0; i < particleCount; i++) {
+        particles.push(new Particle(Math.random() * canvas.width, Math.random() * canvas.height));
+      }
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach((particle, index) => {
+        particle.update();
+        particle.draw();
+        for (let j = index + 1; j < particles.length; j++) {
+          const other = particles[j];
+          const distance = Math.hypot(particle.x - other.x, particle.y - other.y);
+          if (distance < 10000) {
+            ctx.strokeStyle = `rgba(255, 255, 255, ${1 - distance / 150})`;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(particle.x, particle.y);
+            ctx.lineTo(other.x, other.y);
+            ctx.stroke();
+          }
+        }
+      });
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    init();
+    animate();
+  </script>
 </body>
 </html>
