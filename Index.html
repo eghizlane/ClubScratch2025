@@ -101,6 +101,7 @@
       font-size: 1rem;
       cursor: pointer;
       transition: background 0.3s;
+      margin-right: 0.5rem;
     }
     header button:hover { background: #444; }
     select {
@@ -154,6 +155,65 @@
       transition: background 0.3s;
     }
     .btn-primary:hover { background: #444; }
+    input {
+      padding: 0.75rem;
+      border-radius: 8px;
+      border: none;
+      margin-bottom: 1rem;
+      background: rgba(255,255,255,0.1);
+      color: #f0f0f0;
+      font-size: 1rem;
+      width: 100%;
+    }
+    input::placeholder {
+      color: #bbb;
+    }
+    #messageStatus {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: bold;
+    }
+    #messageStatus.success {
+      background: rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+      border: 1px solid #22c55e;
+    }
+    #messageStatus.error {
+      background: rgba(239, 68, 68, 0.2);
+      color: #ef4444;
+      border: 1px solid #ef4444;
+    }
+    .message-item {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .message-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      color: #bbb;
+    }
+    .message-sender {
+      font-weight: bold;
+      color: #22c55e;
+    }
+    .message-content {
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    .no-messages {
+      text-align: center;
+      color: #888;
+      font-style: italic;
+      padding: 2rem;
+    }
     @keyframes fadeIn {
       from { opacity: 0; transform: scale(0.98); }
       to { opacity: 1; transform: scale(1); }
@@ -189,13 +249,28 @@
     <section id="contact" class="hidden fade-in">
       <header>
         <button id="backContact"><i class="ri-arrow-left-line"></i> Retour</button>
+        <button id="viewMessages">Voir les messages</button>
       </header>
       <main>
         <h2>Envoyer un message</h2>
-        <form name="contact" method="POST" data-netlify="true">
-          <textarea name="message" placeholder="Votre message..." required></textarea>
+        <form id="contactForm">
+          <input type="text" id="senderName" placeholder="Votre nom..." required>
+          <textarea id="messageText" placeholder="Votre message..." required></textarea>
           <button type="submit" class="btn-primary">Envoyer</button>
         </form>
+        <div id="messageStatus" class="hidden"></div>
+      </main>
+    </section>
+
+    <!-- Messages View Section -->
+    <section id="messagesView" class="hidden fade-in">
+      <header>
+        <button id="backFromMessages"><i class="ri-arrow-left-line"></i> Retour</button>
+        <button id="clearMessages">Effacer tous les messages</button>
+      </header>
+      <main>
+        <h2>Messages reçus</h2>
+        <div id="messagesList"></div>
       </main>
     </section>
 
@@ -205,12 +280,19 @@
     const menu = document.getElementById("menu");
     const gameView = document.getElementById("gameView");
     const contactSect = document.getElementById("contact");
+    const messagesView = document.getElementById("messagesView");
     const gameList = document.getElementById("gameList");
     const selector = document.getElementById("gameSelector");
     const frame = document.getElementById("gameFrame");
     const backBtn = document.getElementById("backBtn");
     const contactBtn = document.getElementById("contactBtn");
     const backContact = document.getElementById("backContact");
+    const viewMessages = document.getElementById("viewMessages");
+    const backFromMessages = document.getElementById("backFromMessages");
+    const clearMessages = document.getElementById("clearMessages");
+    const contactForm = document.getElementById("contactForm");
+    const messageStatus = document.getElementById("messageStatus");
+    const messagesList = document.getElementById("messagesList");
     let games = [];
 
     // Load games
@@ -246,8 +328,7 @@
     });
 
     function openGame(id) {
-      menu.classList.add("hidden");
-      contactSect.classList.add("hidden");
+      hideAllSections();
       gameView.classList.remove("hidden");
       selector.value = id;
       loadGame(id);
@@ -264,20 +345,125 @@
     }
 
     backBtn.addEventListener("click", () => {
-      gameView.classList.add("hidden");
+      hideAllSections();
       menu.classList.remove("hidden");
       frame.src = "";
     });
 
-    // Contact page handlers
-    contactBtn.addEventListener("click", () => {
+    // Utility function to hide all sections
+    function hideAllSections() {
       menu.classList.add("hidden");
       gameView.classList.add("hidden");
+      contactSect.classList.add("hidden");
+      messagesView.classList.add("hidden");
+    }
+
+    // Contact page handlers
+    contactBtn.addEventListener("click", () => {
+      hideAllSections();
       contactSect.classList.remove("hidden");
     });
+    
     backContact.addEventListener("click", () => {
-      contactSect.classList.add("hidden");
+      hideAllSections();
       menu.classList.remove("hidden");
+    });
+
+    // Messages page handlers
+    viewMessages.addEventListener("click", () => {
+      hideAllSections();
+      messagesView.classList.remove("hidden");
+      loadMessages();
+    });
+    
+    backFromMessages.addEventListener("click", () => {
+      hideAllSections();
+      contactSect.classList.remove("hidden");
+    });
+
+    // Message system functionality
+    function saveMessage(sender, message) {
+      const messages = getMessages();
+      const newMessage = {
+        id: Date.now(),
+        sender: sender,
+        content: message,
+        timestamp: new Date().toLocaleString('fr-FR')
+      };
+      messages.push(newMessage);
+      localStorage.setItem('clubMessages', JSON.stringify(messages));
+      return newMessage;
+    }
+
+    function getMessages() {
+      const stored = localStorage.getItem('clubMessages');
+      return stored ? JSON.parse(stored) : [];
+    }
+
+    function loadMessages() {
+      const messages = getMessages();
+      if (messages.length === 0) {
+        messagesList.innerHTML = '<div class="no-messages">Aucun message pour le moment.</div>';
+        return;
+      }
+      
+      messagesList.innerHTML = messages
+        .sort((a, b) => b.id - a.id) // Most recent first
+        .map(msg => `
+          <div class="message-item">
+            <div class="message-header">
+              <span class="message-sender">${escapeHtml(msg.sender)}</span>
+              <span class="message-time">${msg.timestamp}</span>
+            </div>
+            <div class="message-content">${escapeHtml(msg.content)}</div>
+          </div>
+        `).join('');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function showMessageStatus(message, isSuccess = true) {
+      messageStatus.textContent = message;
+      messageStatus.className = isSuccess ? 'success' : 'error';
+      messageStatus.classList.remove('hidden');
+      
+      setTimeout(() => {
+        messageStatus.classList.add('hidden');
+      }, 3000);
+    }
+
+    // Contact form submission
+    contactForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      
+      const senderName = document.getElementById('senderName').value.trim();
+      const messageText = document.getElementById('messageText').value.trim();
+      
+      if (!senderName || !messageText) {
+        showMessageStatus('Veuillez remplir tous les champs.', false);
+        return;
+      }
+      
+      try {
+        saveMessage(senderName, messageText);
+        contactForm.reset();
+        showMessageStatus('Message envoyé avec succès !', true);
+      } catch (error) {
+        console.error('Erreur lors de l\'envoi du message:', error);
+        showMessageStatus('Erreur lors de l\'envoi du message.', false);
+      }
+    });
+
+    // Clear all messages
+    clearMessages.addEventListener('click', () => {
+      if (confirm('Êtes-vous sûr de vouloir effacer tous les messages ?')) {
+        localStorage.removeItem('clubMessages');
+        loadMessages();
+      }
     });
 
     // Particle animation (unchanged)
